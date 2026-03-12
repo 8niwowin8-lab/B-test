@@ -45,6 +45,16 @@
         <button onclick="event.stopPropagation(); sendOrder()" style="background:var(--primary-pink); color:white; border:none; padding:10px 22px; border-radius:20px; font-weight:bold; font-size:15px;">送出訂單</button>
     </div>
     <div id="cart-detail-overlay" onclick="hideCartDetail()"><div class="cart-modal" onclick="event.stopPropagation()"><h3 style="color:var(--primary-pink); text-align:center; margin-top:0;">📋 您的點餐清單</h3><div id="cart-list"></div><button onclick="hideCartDetail()" style="width:100%; margin-top:20px; padding:15px; background:var(--primary-pink); color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">繼續點餐</button></div></div>
+
+    <!-- 新增：結帳提示大字 modal -->
+    <div id="pay-alert" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center;">
+      <div style="background:white;padding:40px;border-radius:20px;text-align:center;max-width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+        <h1 style="color:#ff85a2;font-size:42px;margin:0 0 20px 0;line-height:1.2;">請先至櫃台<br>現金結帳</h1>
+        <p style="font-size:24px;margin:0 0 30px 0;color:#333;">訂單已送出，謝謝惠顧！</p>
+        <button onclick="document.getElementById('pay-alert').style.display='none'" style="padding:15px 40px;background:#ff85a2;color:white;border:none;border-radius:12px;font-size:22px;cursor:pointer;font-weight:bold;">確定</button>
+      </div>
+    </div>
+
 <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCZDLj-2nQlj34yE8mXlynhYczMfsVqWxE",
@@ -60,7 +70,6 @@
     const db = firebase.database();
     const urlParams = new URLSearchParams(window.location.search);
     const tableNum = urlParams.get('table') || "1";
-    // 如果是 7 號，存進資料庫叫「包廂」
     const finalTableValue = tableNum === "7" ? "包廂" : tableNum;
     document.getElementById('table-label').innerText = tableNum === "7" ? "💎 包廂" : `📍 第 ${tableNum} 桌`;
     let menuData = [];
@@ -68,6 +77,7 @@
     let currentSelections = {};
     const groupTemp = ["冰", "去冰", "熱"];
     const groupSugar = ["無糖", "加糖"];
+
     db.ref('menu').on('value', snap => {
         menuData = []; const cats = new Set();
         snap.forEach(child => {
@@ -77,12 +87,14 @@
         renderNav(cats);
         renderMenu(menuData);
     });
+
     function renderNav(cats) {
         const nav = document.getElementById('cat-nav');
         let navHtml = `<button class="cat-btn active" onclick="filterCat('全部')">全部項目</button>`;
         cats.forEach(c => navHtml += `<button class="cat-btn" onclick="filterCat('${c}')">${c}</button>`);
         nav.innerHTML = navHtml;
     }
+
     function renderMenu(items) {
         const container = document.getElementById('menu-container');
         let html = "";
@@ -109,6 +121,7 @@
         });
         container.innerHTML = html;
     }
+
     function setOpt(e, itemId, val) {
         if(e) e.preventDefault();
         if(!currentSelections[itemId]) currentSelections[itemId] = [];
@@ -121,6 +134,7 @@
         });
         if(e.target) e.target.classList.add('selected');
     }
+
     function addCart(id, name, price) {
         const sel = currentSelections[id] || [];
         const sortedSel = sel.sort((a, b) => groupTemp.indexOf(a) !== -1 ? -1 : 1);
@@ -130,6 +144,7 @@
         document.querySelectorAll(`[id^="btn-${id}-"]`).forEach(btn => btn.classList.remove('selected'));
         updateCart();
     }
+
     function updateCart() {
         const ui = document.getElementById('cart-ui');
         ui.style.display = myCart.length > 0 ? 'flex' : 'none';
@@ -141,10 +156,13 @@
             listContainer.innerHTML += `<div class="cart-item"><div><b>${item.name}</b><br><small>$${item.price}</small></div><div class="btn-remove" onclick="removeFromCart(${index})">❌ 刪除</div></div>`;
         });
     }
+
     function removeFromCart(index) { myCart.splice(index, 1); updateCart(); if(myCart.length === 0) hideCartDetail(); }
+
     function showCartDetail() { document.getElementById('cart-detail-overlay').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+
     function hideCartDetail() { document.getElementById('cart-detail-overlay').style.display = 'none'; document.body.style.overflow = 'auto'; }
-   
+
     function sendOrder() {
         if(myCart.length === 0) return;
         const now = Date.now();
@@ -155,11 +173,14 @@
             status: "待處理",
             timestamp: now
         }).then(() => {
-            alert(`${finalTableValue} 訂單已送出！`);
+            // 跳出大字提示
+            document.getElementById('pay-alert').style.display = 'flex';
             myCart = []; updateCart(); hideCartDetail();
+        }).catch(err => {
+            alert("送出失敗，請重試：" + err.message);
         });
     }
-   
+
     function filterCat(c) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         if(window.event && window.event.target) window.event.target.classList.add('active');
