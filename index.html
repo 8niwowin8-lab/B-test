@@ -21,6 +21,7 @@
         .food-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
         .food-name { font-weight: bold; font-size: 15px; color: #333; height: 42px; overflow: hidden; }
         .food-price { color: var(--primary-pink); font-weight: 800; font-size: 16px; margin: 5px 0; }
+        .food-description { font-size: 14px; color: #555; margin: 8px 0; line-height: 1.4; }
         .addon-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; min-height: 30px; }
         .addon-btn { font-size: 11px; padding: 6px 10px; border: 1px solid #eee; border-radius: 12px; cursor: pointer; background: #fdfdfd; color: #888; }
         .addon-btn.selected { background: var(--primary-pink); color: white; border-color: var(--primary-pink); font-weight: bold; }
@@ -46,7 +47,7 @@
     </div>
     <div id="cart-detail-overlay" onclick="hideCartDetail()"><div class="cart-modal" onclick="event.stopPropagation()"><h3 style="color:var(--primary-pink); text-align:center; margin-top:0;">📋 您的點餐清單</h3><div id="cart-list"></div><button onclick="hideCartDetail()" style="width:100%; margin-top:20px; padding:15px; background:var(--primary-pink); color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">繼續點餐</button></div></div>
 
-    <!-- 新增：結帳提示大字 modal -->
+    <!-- 結帳提示大字彈窗 -->
     <div id="pay-alert" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center;">
       <div style="background:white;padding:40px;border-radius:20px;text-align:center;max-width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
         <h1 style="color:#ff85a2;font-size:42px;margin:0 0 20px 0;line-height:1.2;">請先至櫃台<br>現金結帳</h1>
@@ -108,12 +109,20 @@
                 });
             }
             addonsHtml += `</div>`;
+
+            // 顯示餐點介紹（如果有內容）
+            let descHtml = '';
+            if (i.description && i.description.trim() !== '') {
+                descHtml = `<span class="food-description">${i.description}</span>`;
+            }
+
             html += `<div class="food-card">
                 ${isSoldOut ? '<div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.6);z-index:5;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#ff4d4d;transform:rotate(-15deg);border:2px solid red;">SOLD OUT</div>' : ''}
                 <div class="food-img-box"><img src="${i.image}" ${isSoldOut ? 'style="filter:grayscale(1)"' : ''} onerror="this.src='https://placehold.co/300?text=None'"></div>
                 <div class="food-info">
                     <span class="food-name" ${isSoldOut ? 'style="color:#999"' : ''}>${i.name}</span>
                     <span class="food-price">$${i.price}</span>
+                    ${descHtml}
                     ${addonsHtml}
                     <button class="btn-add-cart" ${isSoldOut ? 'disabled style="background:#ccc"' : ''} onclick="addCart('${i.id}', '${i.name}', ${i.price})">${isSoldOut ? '今日已售完' : '加入購物車'}</button>
                 </div>
@@ -173,7 +182,7 @@
             status: "待處理",
             timestamp: now
         }).then(() => {
-            // 跳出大字提示
+            // 跳出大字提示彈窗
             document.getElementById('pay-alert').style.display = 'flex';
             myCart = []; updateCart(); hideCartDetail();
         }).catch(err => {
