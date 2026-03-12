@@ -45,24 +45,28 @@
         <button onclick="event.stopPropagation(); sendOrder()" style="background:var(--primary-pink); color:white; border:none; padding:10px 22px; border-radius:20px; font-weight:bold; font-size:15px;">送出訂單</button>
     </div>
     <div id="cart-detail-overlay" onclick="hideCartDetail()"><div class="cart-modal" onclick="event.stopPropagation()"><h3 style="color:var(--primary-pink); text-align:center; margin-top:0;">📋 您的點餐清單</h3><div id="cart-list"></div><button onclick="hideCartDetail()" style="width:100%; margin-top:20px; padding:15px; background:var(--primary-pink); color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">繼續點餐</button></div></div>
-
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyBTeLTAX-F5i3WHKYY0ITZsla0Qgs5e2zQ", authDomain: "blingorder.firebaseapp.com", projectId: "blingorder", databaseURL: "https://blingorder-default-rtdb.firebaseio.com", appId: "1:798993901664:web:9c2023b419ae099fe9fb05" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZDLj-2nQlj34yE8mXlynhYczMfsVqWxE",
+      authDomain: "b-test-54722.firebaseapp.com",
+      projectId: "b-test-54722",
+      storageBucket: "b-test-54722.firebasestorage.app",
+      messagingSenderId: "224486979893",
+      appId: "1:224486979893:web:9527007e7bcf128e5ab47c",
+      measurementId: "G-5LY63TENT4"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const urlParams = new URLSearchParams(window.location.search);
     const tableNum = urlParams.get('table') || "1";
     // 如果是 7 號，存進資料庫叫「包廂」
     const finalTableValue = tableNum === "7" ? "包廂" : tableNum;
     document.getElementById('table-label').innerText = tableNum === "7" ? "💎 包廂" : `📍 第 ${tableNum} 桌`;
-
     let menuData = [];
     let myCart = [];
-    let currentSelections = {}; 
+    let currentSelections = {};
     const groupTemp = ["冰", "去冰", "熱"];
     const groupSugar = ["無糖", "加糖"];
-
     db.ref('menu').on('value', snap => {
         menuData = []; const cats = new Set();
         snap.forEach(child => {
@@ -72,14 +76,12 @@
         renderNav(cats);
         renderMenu(menuData);
     });
-
     function renderNav(cats) {
         const nav = document.getElementById('cat-nav');
         let navHtml = `<button class="cat-btn active" onclick="filterCat('全部')">全部項目</button>`;
         cats.forEach(c => navHtml += `<button class="cat-btn" onclick="filterCat('${c}')">${c}</button>`);
         nav.innerHTML = navHtml;
     }
-
     function renderMenu(items) {
         const container = document.getElementById('menu-container');
         let html = "";
@@ -106,7 +108,6 @@
         });
         container.innerHTML = html;
     }
-
     function setOpt(e, itemId, val) {
         if(e) e.preventDefault();
         if(!currentSelections[itemId]) currentSelections[itemId] = [];
@@ -119,48 +120,45 @@
         });
         if(e.target) e.target.classList.add('selected');
     }
-
     function addCart(id, name, price) {
         const sel = currentSelections[id] || [];
         const sortedSel = sel.sort((a, b) => groupTemp.indexOf(a) !== -1 ? -1 : 1);
         const finalName = sortedSel.length > 0 ? `${name} (${sortedSel.join('/')})` : name;
         myCart.push({ name: finalName, price: price });
-        currentSelections[id] = []; 
+        currentSelections[id] = [];
         document.querySelectorAll(`[id^="btn-${id}-"]`).forEach(btn => btn.classList.remove('selected'));
         updateCart();
     }
-
     function updateCart() {
         const ui = document.getElementById('cart-ui');
         ui.style.display = myCart.length > 0 ? 'flex' : 'none';
         document.getElementById('cart-qty').innerText = myCart.length;
         document.getElementById('cart-sum').innerText = myCart.reduce((acc, obj) => acc + parseInt(obj.price), 0);
-        const listContainer = document.getElementById('cart-list'); 
+        const listContainer = document.getElementById('cart-list');
         listContainer.innerHTML = "";
         myCart.forEach((item, index) => {
             listContainer.innerHTML += `<div class="cart-item"><div><b>${item.name}</b><br><small>$${item.price}</small></div><div class="btn-remove" onclick="removeFromCart(${index})">❌ 刪除</div></div>`;
         });
     }
-
     function removeFromCart(index) { myCart.splice(index, 1); updateCart(); if(myCart.length === 0) hideCartDetail(); }
     function showCartDetail() { document.getElementById('cart-detail-overlay').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
     function hideCartDetail() { document.getElementById('cart-detail-overlay').style.display = 'none'; document.body.style.overflow = 'auto'; }
-    
+   
     function sendOrder() {
         if(myCart.length === 0) return;
         const now = Date.now();
-        db.ref('orders/' + now).set({ 
-            table: finalTableValue, 
-            items: myCart.map(c => c.name), 
-            total: document.getElementById('cart-sum').innerText, 
-            status: "待處理", 
-            timestamp: now 
-        }).then(() => { 
-            alert(`${finalTableValue} 訂單已送出！`); 
-            myCart = []; updateCart(); hideCartDetail(); 
+        db.ref('orders/' + now).set({
+            table: finalTableValue,
+            items: myCart.map(c => c.name),
+            total: document.getElementById('cart-sum').innerText,
+            status: "待處理",
+            timestamp: now
+        }).then(() => {
+            alert(`${finalTableValue} 訂單已送出！`);
+            myCart = []; updateCart(); hideCartDetail();
         });
     }
-    
+   
     function filterCat(c) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         if(window.event && window.event.target) window.event.target.classList.add('active');
